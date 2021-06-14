@@ -16,6 +16,7 @@
 
 package com.example.android.trackmysleepquality.sleeptracker
 
+
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -24,6 +25,7 @@ import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.GridLayoutManager
 import com.example.android.trackmysleepquality.R
 import com.example.android.trackmysleepquality.database.SleepDatabase
 import com.example.android.trackmysleepquality.databinding.FragmentSleepTrackerBinding
@@ -56,7 +58,36 @@ class SleepTrackerFragment : Fragment() {
         val viewModel =
             ViewModelProvider(this, viewModelFactory).get(SleepTrackerViewModel::class.java)
         binding.sleepTrackerViewModel = viewModel
+        val manager = GridLayoutManager(activity, 3)
+        manager.spanSizeLookup= object :GridLayoutManager.SpanSizeLookup(){
+            override fun getSpanSize(position: Int): Int =when(position){
+                0->3
+                else ->1
+            }
+
+        }
+        binding.sleepList.layoutManager = manager
+        val adapter = SleepNightAdapter(SleepNightListener {
+            viewModel.onSleepNightClicked(it)
+        })
+        binding.sleepList.adapter = adapter
         binding.lifecycleOwner = this
+        viewModel.navigateToSleepDataQuality.observe(viewLifecycleOwner, { night ->
+            night?.let {
+                this.findNavController().navigate(
+                    SleepTrackerFragmentDirections.actionSleepTrackerFragmentToSleepDetailFragment(night)
+
+                )
+                viewModel.onSleepDataQualityNavigated()
+            }
+        })
+
+        viewModel.nights.observe(viewLifecycleOwner, {
+            it?.let {
+                adapter.addHeaderAndSubmitList(it)
+            }
+        })
+
 
         //observe when to navigate
         viewModel.navigateToSleepQuality.observe(viewLifecycleOwner, {
